@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Counter-UAS Mesh — Decentralized Drone Defense</title>
+<style>
+:root {
+  --bg: #0a0a0f;
+  --surface: #12121a;
+  --border: #2a2a3a;
+  --text: #e8e8f0;
+  --dim: #8888aa;
+  --accent: #ef4444;
+  --green: #10b981;
+  --blue: #6366f1;
+  --orange: #f59e0b;
+  --mono: "SF Mono","Menlo","Consolas",monospace;
+  --font: "Inter",system-ui,sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:var(--font);-webkit-font-smoothing:antialiased}
+
+nav{display:flex;align-items:center;justify-content:space-between;padding:16px 24px;border-bottom:1px solid var(--border);position:sticky;top:0;background:rgba(10,10,15,0.85);backdrop-filter:blur(16px);z-index:100}
+nav .logo{font-size:18px;font-weight:700}
+nav .logo span{color:var(--accent)}
+nav .links{display:flex;gap:20px;font-size:13px}
+nav .links a{color:var(--dim);text-decoration:none}
+nav .links a:hover{color:var(--text)}
+
+.hero{text-align:center;padding:80px 24px 60px;max-width:800px;margin:0 auto}
+.hero .badge{display:inline-block;font-size:11px;font-weight:600;padding:4px 14px;border-radius:9999px;background:rgba(239,68,68,0.12);color:var(--accent);border:1px solid rgba(239,68,68,0.2);margin-bottom:20px;letter-spacing:0.5px;text-transform:uppercase}
+.hero h1{font-size:48px;font-weight:800;letter-spacing:-1.5px;line-height:1.1;margin-bottom:16px}
+.hero h1 span{background:linear-gradient(135deg,var(--accent),var(--orange));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.hero p{font-size:18px;color:var(--dim);line-height:1.6;max-width:600px;margin:0 auto 32px}
+.hero-buttons{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:12px 24px;border-radius:9999px;font-size:14px;font-weight:600;text-decoration:none;transition:all 0.15s;border:none;cursor:pointer}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-primary:hover{opacity:0.88}
+.btn-outline{background:transparent;border:1px solid var(--border);color:var(--text)}
+.btn-outline:hover{border-color:var(--accent);color:var(--accent)}
+
+.section{padding:80px 24px;max-width:900px;margin:0 auto}
+.section-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--accent);margin-bottom:12px}
+.section h2{font-size:32px;font-weight:750;letter-spacing:-0.8px;margin-bottom:16px}
+.section p{font-size:16px;color:var(--dim);line-height:1.7;margin-bottom:24px}
+
+.comparison{width:100%;border-collapse:collapse;margin:24px 0;font-size:14px}
+.comparison th,.comparison td{padding:12px 16px;border-bottom:1px solid var(--border);text-align:left}
+.comparison th{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--dim);font-weight:600}
+.comparison .fail{color:var(--accent);opacity:0.7}
+.comparison .pass{color:var(--green);font-weight:600}
+
+.arch{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:32px;margin:32px 0;font-family:var(--mono);font-size:12px;line-height:1.8;white-space:pre;overflow-x:auto;color:var(--dim)}
+
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px;margin:32px 0}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px}
+.card-icon{font-size:28px;margin-bottom:12px}
+.card h3{font-size:16px;font-weight:650;margin-bottom:8px}
+.card p{font-size:13px;color:var(--dim);line-height:1.6;margin:0}
+
+.flow{display:flex;flex-direction:column;gap:0;margin:32px 0}
+.flow-step{display:flex;align-items:flex-start;gap:16px;padding:20px;background:var(--surface);border:1px solid var(--border);position:relative}
+.flow-step:first-child{border-radius:12px 12px 0 0}
+.flow-step:last-child{border-radius:0 0 12px 12px}
+.flow-step:not(:last-child){border-bottom:none}
+.flow-num{width:32px;height:32px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;flex-shrink:0}
+.flow-content h3{font-size:15px;font-weight:650;margin-bottom:4px}
+.flow-content p{font-size:13px;color:var(--dim);margin:0;line-height:1.5}
+
+.code-block{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px 24px;font-family:var(--mono);font-size:13px;line-height:1.7;overflow-x:auto;margin:24px 0;color:var(--dim)}
+.code-block .kw{color:var(--accent)}
+.code-block .fn{color:var(--green)}
+.code-block .cmt{color:#484f58}
+.code-block .str{color:var(--orange)}
+
+.terminal{background:#0d1117;border:1px solid #30363d;border-radius:12px;max-width:720px;margin:24px auto;overflow:hidden}
+.terminal-header{display:flex;gap:6px;padding:10px 14px;background:#161b22;border-bottom:1px solid #30363d}
+.terminal-dot{width:10px;height:10px;border-radius:50%}
+.terminal-dot.r{background:#ff5f56}.terminal-dot.y{background:#ffbd2e}.terminal-dot.g{background:#27c93f}
+.terminal-body{padding:16px 20px;font-family:var(--mono);font-size:12px;line-height:1.8;color:#8b949e}
+.terminal-body .g{color:var(--green)}
+.terminal-body .r{color:var(--accent)}
+.terminal-body .o{color:var(--orange)}
+.terminal-body .w{color:#e6edf3}
+
+footer{border-top:1px solid var(--border);padding:32px 24px;text-align:center;font-size:12px;color:var(--dim)}
+footer a{color:var(--blue);text-decoration:none}
+
+@media(max-width:640px){
+  .hero h1{font-size:32px}
+  .hero p{font-size:15px}
+  .section h2{font-size:24px}
+  .section{padding:48px 20px}
+  .arch{font-size:10px;padding:16px}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="logo">Counter-<span>UAS</span> Mesh</div>
+  <div class="links">
+    <a href="#why-dag">Why DAG</a>
+    <a href="#how">How It Works</a>
+    <a href="#demo">Demo</a>
+    <a href="https://github.com/gdalabs/counter-uas-mesh" target="_blank">GitHub</a>
+  </div>
+</nav>
+
+<div class="hero">
+  <div class="badge">Vertex Swarm Challenge 2026 · Track 3</div>
+  <h1>Decentralized<br><span>Drone Defense</span><br>Without Internet</h1>
+  <p>Detect, triangulate, and intercept hostile UAVs using peer-to-peer Hashgraph DAG consensus. No central server. No internet. Byzantine fault tolerant in under 100ms.</p>
+  <div class="hero-buttons">
+    <a class="btn btn-primary" href="https://github.com/gdalabs/counter-uas-mesh" target="_blank">View Source</a>
+    <a class="btn btn-outline" href="#why-dag">Why DAG?</a>
+  </div>
+</div>
+
+<div class="section" id="why-dag">
+  <div class="section-label">The Core Insight</div>
+  <h2>Why Every Other Approach Fails</h2>
+  <p>Central command servers are the first target in any engagement. Once destroyed, the entire defense network goes dark. Blockchain is too slow. Raft isn't Byzantine fault-tolerant. Only Hashgraph DAG solves all three requirements simultaneously.</p>
+
+  <table class="comparison">
+    <tr><th>Technology</th><th>Speed</th><th>BFT</th><th>Offline</th><th>Cost</th><th>Verdict</th></tr>
+    <tr><td>Central Server</td><td>1ms</td><td class="fail">N/A</td><td class="fail">❌</td><td>$$</td><td class="fail">Single point of failure</td></tr>
+    <tr><td>Ethereum</td><td class="fail">12-15s</td><td>✅</td><td class="fail">❌</td><td class="fail">$2-50/tx</td><td class="fail">Drone escapes</td></tr>
+    <tr><td>Solana</td><td>400ms</td><td>✅</td><td class="fail">❌</td><td>$0.0025</td><td class="fail">Needs internet</td></tr>
+    <tr><td>Raft/Paxos</td><td>1-10ms</td><td class="fail">❌</td><td>✅</td><td>Free</td><td class="fail">1 bad node = broken</td></tr>
+    <tr><td><strong>Hashgraph DAG</strong></td><td class="pass">26-103ms</td><td class="pass">✅</td><td class="pass">✅</td><td class="pass">Free</td><td class="pass">✅ The only option</td></tr>
+  </table>
+
+  <h3 style="margin-top:40px;margin-bottom:16px">What Makes DAG Different</h3>
+  <p>Traditional BFT protocols exchange O(n²) vote messages per round. Hashgraph eliminates votes entirely through <strong>virtual voting</strong> — each node computes how others would vote from the DAG structure alone. This is why 26ms consensus is achievable.</p>
+
+  <div class="cards">
+    <div class="card">
+      <div class="card-icon">📡</div>
+      <h3>No Internet Required</h3>
+      <p>Nodes communicate directly — WiFi, mesh radio, any IP transport. When cell towers and satellites are jammed, the mesh still works.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">🛡️</div>
+      <h3>Byzantine Fault Tolerant</h3>
+      <p>Up to ⌊(n-1)/3⌋ nodes can be compromised or malicious. Consensus still holds. Raft breaks with just one bad actor.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">⚡</div>
+      <h3>26ms Consensus</h3>
+      <p>A drone at 100km/h moves 0.7m in 26ms vs 11m in Solana's 400ms. In targeting, that's the difference between hit and miss.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">💰</div>
+      <h3>Zero Gas Fees</h3>
+      <p>Thousands of sensor readings per second. On Ethereum, that's millions in gas. On Vertex, it's free.</p>
+    </div>
+  </div>
+</div>
+
+<div class="section" id="how">
+  <div class="section-label">How It Works</div>
+  <h2>From Detection to Intercept</h2>
+
+  <div class="flow">
+    <div class="flow-step">
+      <div class="flow-num">1</div>
+      <div class="flow-content">
+        <h3>Detection</h3>
+        <p>3+ sensor nodes scan for hostile UAVs. Each reports bearing (direction) and RSSI (signal strength) to the P2P mesh.</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">2</div>
+      <div class="flow-content">
+        <h3>Triangulation</h3>
+        <p>When 2+ sensors detect the same target, DAG-ordered messages enable deterministic triangulation. Every node computes the same position — guaranteed by Vertex consensus.</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">3</div>
+      <div class="flow-content">
+        <h3>Deterministic Auction</h3>
+        <p>Interceptors bid with their distance. Vertex delivers bids in identical order to all nodes, so everyone independently computes the same winner. No explicit voting needed.</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">4</div>
+      <div class="flow-content">
+        <h3>Intercept</h3>
+        <p>Winning interceptor pursues and neutralizes the target. Position updates shared across mesh in real-time.</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">5</div>
+      <div class="flow-content">
+        <h3>Failover</h3>
+        <p>If an interceptor is destroyed mid-pursuit, heartbeat loss triggers automatic re-auction. Next-nearest interceptor takes over — within seconds, no human intervention.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="arch">
+┌──────────────────────────────────────────────────────┐
+│              P2P Mesh (FoxMQ / Vertex DAG)            │
+│                                                      │
+│  Sensor A ──┐                                        │
+│             ├── consensus → Triangulate → Auction ──► Interceptor X
+│  Sensor B ──┤                                        │
+│             ├── consensus → Track       → Auction ──► Interceptor Y
+│  Sensor C ──┘                                        │
+│                                                      │
+│  No central command. No internet. No single point    │
+│  of failure. Byzantine fault tolerant.               │
+└──────────────────────────────────────────────────────┘</div>
+</div>
+
+<div class="section">
+  <div class="section-label">Deterministic Consensus</div>
+  <h2>Why No Voting Is Needed</h2>
+  <p>The key innovation: because Vertex delivers messages in the same order to every node, each node can independently run the same auction logic and arrive at the same result. This is deterministic consensus — no coordination messages, no voting rounds, no overhead.</p>
+
+  <div class="code-block">
+<span class="cmt"># Every interceptor runs this independently.</span>
+<span class="cmt"># Vertex guarantees they all see bids in the same order.</span>
+<span class="cmt"># Therefore they all compute the same winner.</span>
+
+bids.<span class="fn">sort</span>(key=<span class="kw">lambda</span> b: (b[<span class="str">"distance"</span>], b[<span class="str">"interceptor_id"</span>]))
+winner = <span class="fn">next</span>(b <span class="kw">for</span> b <span class="kw">in</span> bids <span class="kw">if</span> b[<span class="str">"interceptor_id"</span>] <span class="kw">not in</span> busy)
+
+<span class="cmt"># No voting. No coordinator. Pure computation.</span>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-label">Resilience</div>
+  <h2>What Happens When Things Break</h2>
+
+  <table class="comparison">
+    <tr><th>Scenario</th><th>Response</th></tr>
+    <tr><td>Sensor destroyed</td><td>Remaining sensors continue (degraded accuracy with 2+ nodes)</td></tr>
+    <tr><td>Interceptor destroyed mid-pursuit</td><td>Heartbeat loss → automatic re-auction → next interceptor takes over</td></tr>
+    <tr><td>Compromised node sends false data</td><td>BFT consensus filters Byzantine behavior (up to ⌊(n-1)/3⌋ malicious)</td></tr>
+    <tr><td>Multiple simultaneous threats</td><td>Parallel detection + auction. N threats → N interceptors</td></tr>
+    <tr><td>All comms infrastructure destroyed</td><td>Local mesh radio still works. Vertex runs on any IP transport</td></tr>
+  </table>
+</div>
+
+<div class="section" id="demo">
+  <div class="section-label">Live Demo Output</div>
+  <h2>See It Run</h2>
+
+  <div class="terminal">
+    <div class="terminal-header">
+      <div class="terminal-dot r"></div>
+      <div class="terminal-dot y"></div>
+      <div class="terminal-dot g"></div>
+    </div>
+    <div class="terminal-body">
+<span class="w">[S1] 🔍 Detected T-abc123 — bearing 13.3°, RSSI 78</span>
+<span class="w">[S2] 🔍 Detected T-abc123 — bearing 339.2°, RSSI 13</span>
+<span class="o">[S2] ⚠️  THREAT CONFIRMED: T-abc123 at (54.5, 106.1)</span>
+<span class="w">[I1] 📡 Threat T-abc123 — dist 82, bidding</span>
+<span class="w">[I2] 📡 Threat T-abc123 — dist 50, bidding</span>
+<span class="g">[I2] 🏆 Won auction for T-abc123</span>
+<span class="g">[I2] 🎯 ASSIGNED → intercept T-abc123</span>
+<span class="w">[I2] → Moving to (60.1, 45.2), dist=35, fuel=96%</span>
+<span class="w">[I2] → Moving to (55.3, 78.4), dist=15, fuel=93%</span>
+<span class="r">[I2] 💥 INTERCEPTED T-abc123!</span>
+<span class="g">✅ All threats neutralized!</span>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-label">The Bigger Picture</div>
+  <h2>An Untapped Opportunity</h2>
+  <p>Hashgraph was invented in 2016 but locked behind patents until 2022, when <a href="https://hedera.com/blog/hedera-governing-council-votes-to-purchase-hashgraph-ip-commits-to-open-source-worlds-most-advanced-distributed-ledger-technology/" target="_blank" style="color:var(--blue)">Hedera open-sourced the IP under Apache 2.0</a>. The defense community hasn't noticed yet — drone swarm research still uses Raft (not BFT) or Ethereum (too slow).</p>
+  <p>The <a href="https://defensescoop.com/2026/03/31/pentagon-preparing-drone-swarm-crucible/" target="_blank" style="color:var(--blue)">Pentagon is actively soliciting</a> drone swarm systems with "decentralized control" and "no single point of failure." Counter-UAS Mesh is built on the technology that was literally designed for this problem.</p>
+
+  <div class="cards">
+    <div class="card">
+      <div class="card-icon">🎯</div>
+      <h3>Counter-UAS</h3>
+      <p>Detect, track, and intercept hostile drones without central command. The first application of Hashgraph to defense.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">🤖</div>
+      <h3>Swarm Coordination</h3>
+      <p>Friendly drone fleets that self-organize, negotiate tasks, and heal when units are lost. Multi-vendor interoperability.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">🛰️</div>
+      <h3>Resilient ISR</h3>
+      <p>Intelligence, surveillance, and reconnaissance that survives infrastructure destruction. Data consensus at the edge.</p>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-label">Tech Stack</div>
+  <h2>Built With</h2>
+  <table class="comparison">
+    <tr><th>Component</th><th>Technology</th><th>Why</th></tr>
+    <tr><td>Coordination</td><td>FoxMQ (MQTT 5.0 on Vertex DAG)</td><td>BFT consensus-ordered messaging</td></tr>
+    <tr><td>Agents</td><td>Python + paho-mqtt</td><td>Rapid prototyping</td></tr>
+    <tr><td>Consensus</td><td>Hashgraph (via Tashi Vertex)</td><td>26-103ms BFT, no internet, gasless</td></tr>
+    <tr><td>Dashboard</td><td>HTML Canvas + REST polling</td><td>Real-time 2D battle map</td></tr>
+    <tr><td>Transport</td><td>UDP (QUIC)</td><td>Low-latency P2P</td></tr>
+  </table>
+</div>
+
+<footer>
+  <p>Counter-UAS Mesh — Built by <a href="https://github.com/gdalabs" target="_blank">GDA Labs</a> for <a href="https://dorahacks.io" target="_blank">Vertex Swarm Challenge 2026</a></p>
+  <p style="margin-top:8px"><a href="https://github.com/gdalabs/counter-uas-mesh" target="_blank">GitHub</a> · <a href="https://docs.tashi.network/" target="_blank">Vertex Docs</a> · <a href="https://tashi.network/" target="_blank">Tashi Network</a></p>
+</footer>
+
+</body>
+</html>
