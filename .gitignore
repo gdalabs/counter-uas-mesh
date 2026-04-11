@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+.env
+venv/
+.venv/
+node_modules/
+dist/
+.wrangler/
+foxmq
+foxmq.d/
+*.zip
