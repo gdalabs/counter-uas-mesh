@@ -258,4 +258,8 @@ counter-uas-mesh/
 
 ## License
 
-MIT — [GDA Labs](https://github.com/gdalabs)
+[Business Source License 1.1](LICENSE) — [GDA Labs](https://github.com/gdalabs)
+
+- **Non-commercial use**: Permitted (research, evaluation, personal projects)
+- **Commercial use**: Requires separate license from GDA Labs
+- **Change Date**: 2030-04-11 → Converts to Apache 2.0
