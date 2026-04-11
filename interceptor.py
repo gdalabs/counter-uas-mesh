@@ -29,7 +29,7 @@ assigned_threats: set[str] = set()  # threats already assigned to someone
 confirmed_threat_positions: dict[str, tuple] = {}  # threat_id -> (x, y)
 
 STALE_MS = 10_000
-SPEED = 5.0
+SPEED = 8.0
 INTERCEPT_RANGE = 5.0
 FAILOVER_CHECK_MS = 8_000  # If assigned interceptor goes offline, reassign after this
 
@@ -75,11 +75,11 @@ def on_message(client, userdata, msg):
         confirmed_threat_positions[threat_id] = threat_pos
 
         # Skip if already handled
-        if threat_id in bid_submitted or threat_id in assigned_threats:
+        if threat_id in assigned_threats:
             return
 
-        # If busy, queue for later — don't bid now
-        if current_target is not None:
+        # If busy or already bidding on another, skip — will re-bid on idle
+        if current_target is not None or threat_id in bid_submitted:
             return
 
         # Bid
@@ -270,13 +270,12 @@ def pursuit_loop(client, node_id):
                 }, qos=2)
                 time.sleep(1)
                 current_target = None
-                status = "idle"
-                print(f"[{node_id}] ✅ Idle — ready for next threat")
 
-                # Check ALL known threats — bid on any unassigned ones
+                # Immediately check for unassigned threats BEFORE returning
+                rebid_found = False
                 for tid, tpos in list(confirmed_threat_positions.items()):
                     if tid not in assigned_threats:
-                        bid_submitted.discard(tid)  # Allow re-bid
+                        bid_submitted.discard(tid)
                         dist = distance(tuple(pos_current), tpos)
                         print(f"[{node_id}] 🔄 Re-bidding for {tid} (dist {dist:.0f})")
                         bid_submitted.add(tid)
@@ -288,6 +287,23 @@ def pursuit_loop(client, node_id):
                             "threat_pos": list(tpos),
                             "ts": now_ms(),
                         }, qos=2)
+                        rebid_found = True
+
+                if not rebid_found:
+                    # No threats left — return home
+                    status = "returning"
+                    home = userdata["pos"]
+                    print(f"[{node_id}] ↩ Returning to home ({home[0]}, {home[1]})")
+                    while distance(tuple(pos_current), home) > INTERCEPT_RANGE and current_target is None:
+                        dx = home[0] - pos_current[0]
+                        dy = home[1] - pos_current[1]
+                        mag = (dx**2 + dy**2) ** 0.5
+                        pos_current[0] = round(pos_current[0] + dx / mag * SPEED, 1)
+                        pos_current[1] = round(pos_current[1] + dy / mag * SPEED, 1)
+                        time.sleep(0.5)
+
+                status = "idle"
+                print(f"[{node_id}] ✅ Ready for next threat")
             else:
                 dx = tgt[0] - pos_current[0]
                 dy = tgt[1] - pos_current[1]

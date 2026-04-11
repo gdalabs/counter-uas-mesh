@@ -106,8 +106,8 @@ def main():
             t["pos"][0] += t["vel"][0]
             t["pos"][1] += t["vel"][1]
 
-            # Out of bounds check
-            if t["pos"][0] < -50 or t["pos"][0] > 200 or t["pos"][1] < -50 or t["pos"][1] > 200:
+            # Out of bounds check (generous bounds to allow intercept time)
+            if t["pos"][0] < -150 or t["pos"][0] > 300 or t["pos"][1] < -150 or t["pos"][1] > 300:
                 t["active"] = False
                 print(f"  📤 Threat {t['id']} left area")
                 continue

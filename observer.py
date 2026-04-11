@@ -170,6 +170,12 @@ canvas { width: 100%; height: 100%; }
 .online { color: #10b981; }
 .offline { color: #ef4444; }
 .pursuing { color: #f59e0b; }
+.legend { position: absolute; bottom: 16px; left: 16px; background: rgba(18,18,26,0.9); border: 1px solid #2a2a3a; border-radius: 8px; padding: 12px 16px; font-size: 11px; }
+.legend-item { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.legend-item:last-child { margin-bottom: 0; }
+.legend-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+.legend-diamond { width: 12px; height: 12px; transform: rotate(45deg); flex-shrink: 0; }
+.legend-label { color: #888; }
 @media (max-width: 768px) { .sidebar { display: none; } }
 </style>
 </head>
@@ -181,6 +187,14 @@ canvas { width: 100%; height: 100%; }
 <div class="main">
   <div class="map-container">
     <canvas id="map"></canvas>
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot" style="background:#10b981"></div><span class="legend-label">Sensor (S)</span></div>
+      <div class="legend-item"><div class="legend-diamond" style="background:#6366f1"></div><span class="legend-label">Interceptor — Idle</span></div>
+      <div class="legend-item"><div class="legend-diamond" style="background:#f59e0b"></div><span class="legend-label">Interceptor — Pursuing</span></div>
+      <div class="legend-item"><div class="legend-dot" style="background:#ef4444"></div><span class="legend-label">Hostile UAV (Threat)</span></div>
+      <div class="legend-item"><div class="legend-dot" style="background:#444"></div><span class="legend-label">Neutralized</span></div>
+      <div class="legend-item"><div style="width:30px;height:0;border-top:1px dashed #f59e0b;flex-shrink:0"></div><span class="legend-label">Pursuit path</span></div>
+    </div>
   </div>
   <div class="sidebar">
     <h3>Nodes</h3>
@@ -325,15 +339,36 @@ async function poll() {
   requestAnimationFrame(poll);
 }
 
-// Start with slower poll interval
-setInterval(async () => {
-  try {
-    const res = await fetch('/api/state');
-    const data = await res.json();
-    draw(data);
-    updateSidebar(data);
-  } catch {}
-}, 500);
+// 5-second countdown before starting
+const overlay = document.createElement('div');
+overlay.style.cssText = 'position:fixed;inset:0;background:#0a0a0f;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999;transition:opacity 0.5s';
+overlay.innerHTML = '<div style="font-size:48px;font-weight:800;color:#ef4444;letter-spacing:-1px" id="countdown">5</div><div style="color:#888;margin-top:12px;font-size:14px">Initializing mesh...</div>';
+document.body.appendChild(overlay);
+
+let count = 5;
+const countEl = overlay.querySelector('#countdown');
+const countdownTimer = setInterval(() => {
+  count--;
+  if (count > 0) {
+    countEl.textContent = count;
+  } else {
+    clearInterval(countdownTimer);
+    overlay.style.opacity = '0';
+    setTimeout(() => overlay.remove(), 500);
+    startPolling();
+  }
+}, 1000);
+
+function startPolling() {
+  setInterval(async () => {
+    try {
+      const res = await fetch('/api/state');
+      const data = await res.json();
+      draw(data);
+      updateSidebar(data);
+    } catch {}
+  }, 500);
+}
 </script>
 </body>
 </html>"""
