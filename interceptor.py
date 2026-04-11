@@ -71,17 +71,18 @@ def on_message(client, userdata, msg):
         if not threat_id:
             return
 
-        # Always store position for re-bidding later
+        # Always store position (even if busy — needed for re-bid on idle)
         confirmed_threat_positions[threat_id] = threat_pos
 
-        if threat_id in bid_submitted:
-            return  # Already bid
-        if threat_id in assigned_threats:
-            return  # Already assigned to someone
-        if current_target is not None:
-            # Busy — will re-bid when idle
+        # Skip if already handled
+        if threat_id in bid_submitted or threat_id in assigned_threats:
             return
 
+        # If busy, queue for later — don't bid now
+        if current_target is not None:
+            return
+
+        # Bid
         bid_submitted.add(threat_id)
         dist = distance(tuple(pos_current), threat_pos)
         print(f"[{node_id}] 📡 Threat {threat_id} at {threat_pos} — dist {dist:.0f}, bidding")
@@ -96,40 +97,56 @@ def on_message(client, userdata, msg):
         }, qos=2)
 
     elif msg.topic == TOPIC_BID:
-        # Deterministic auction: all nodes see bids in same order (Vertex guarantee)
         threat_id = data.get("threat_id")
         if not threat_id or threat_id in assigned_threats:
             return
 
-        # Collect bid, wait briefly, then resolve
+        # Collect bids
         if not hasattr(on_message, '_bid_cache'):
             on_message._bid_cache = {}
         if threat_id not in on_message._bid_cache:
-            on_message._bid_cache[threat_id] = {"bids": [], "first": now_ms()}
-        on_message._bid_cache[threat_id]["bids"].append(data)
+            on_message._bid_cache[threat_id] = {"bids": [], "first": now_ms(), "resolved": False}
 
-        # Resolve after collecting — check number of known interceptors
         cache = on_message._bid_cache[threat_id]
-        known_interceptors = sum(
+        if cache["resolved"]:
+            return  # Already resolved this auction
+
+        # Dedup by interceptor_id
+        existing_ids = {b["interceptor_id"] for b in cache["bids"]}
+        if data["interceptor_id"] not in existing_ids:
+            cache["bids"].append(data)
+
+        # Count available (non-busy) interceptors
+        available_interceptors = sum(
             1 for p in peers.values()
-            if p["type"] == "interceptor" and p["status"] != "offline"
-        ) + 1  # include self
+            if p["type"] == "interceptor" and p["status"] != "offline" and not p.get("target")
+        )
+        if current_target is None:
+            available_interceptors += 1  # include self if idle
+
         elapsed = now_ms() - cache["first"]
 
-        # Resolve when all interceptors have bid OR timeout
-        if len(cache["bids"]) >= known_interceptors or elapsed > 2000:
+        # Resolve when enough bids collected OR timeout
+        if len(cache["bids"]) >= max(available_interceptors, 1) or elapsed > 2000:
+            cache["resolved"] = True
             resolve_auction(client, node_id, threat_id, cache["bids"])
-            del on_message._bid_cache[threat_id]
 
     elif msg.topic == TOPIC_ASSIGN:
         threat_id = data.get("threat_id")
-        assigned_threats.add(threat_id)
+        assignee = data.get("interceptor_id")
 
-        if data.get("interceptor_id") == node_id and current_target is None:
+        if assignee == node_id and current_target is None:
+            assigned_threats.add(threat_id)
             target_pos = tuple(data.get("target_pos", [0, 0]))
             current_target = {"threat_id": threat_id, "pos": target_pos}
             status = "pursuing"
             print(f"[{node_id}] 🎯 ASSIGNED → intercept {threat_id} at {target_pos}")
+        elif assignee == node_id and current_target is not None:
+            # Won but busy — don't mark as assigned so others can take it
+            print(f"[{node_id}] ⏳ Won {threat_id} but busy — leaving for others")
+        else:
+            # Someone else was assigned
+            assigned_threats.add(threat_id)
 
     elif msg.topic == TOPIC_STATUS:
         if data.get("status") == "intercepted":
@@ -256,11 +273,12 @@ def pursuit_loop(client, node_id):
                 status = "idle"
                 print(f"[{node_id}] ✅ Idle — ready for next threat")
 
-                # Check for unassigned threats and re-bid
-                for tid, tpos in confirmed_threat_positions.items():
-                    if tid not in assigned_threats and tid not in bid_submitted:
+                # Check ALL known threats — bid on any unassigned ones
+                for tid, tpos in list(confirmed_threat_positions.items()):
+                    if tid not in assigned_threats:
+                        bid_submitted.discard(tid)  # Allow re-bid
                         dist = distance(tuple(pos_current), tpos)
-                        print(f"[{node_id}] 🔄 Re-bidding for unassigned {tid}")
+                        print(f"[{node_id}] 🔄 Re-bidding for {tid} (dist {dist:.0f})")
                         bid_submitted.add(tid)
                         pub(client, TOPIC_BID, {
                             "interceptor_id": node_id,
