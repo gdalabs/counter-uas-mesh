@@ -262,4 +262,4 @@ counter-uas-mesh/
 
 - **Non-commercial use**: Permitted (research, evaluation, personal projects)
 - **Commercial use**: Requires separate license from GDA Labs
-- **Change Date**: 2030-04-11 → Converts to Apache 2.0
+- **Change Date**: 2026-04-11 → Converts to Apache 2.0
